@@ -8,6 +8,9 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
   site: isDevelopment ? info.localSiteUrl : info.siteUrl,
+  security: {
+    checkOrigin: false,
+  },
   integrations: [tailwind()],
   output: 'server',
   adapter: isDevelopment
