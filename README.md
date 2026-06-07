@@ -203,6 +203,27 @@ Clear the session cookie in your browser and log in again.
 
 ## Deployment
 
+### SESSION_SECRET (HMAC stateless sessions)
+
+This app supports HMAC-signed stateless sessions stored entirely in a cookie. To enable HMAC sessions (recommended for production on Vercel), set the `SESSION_SECRET` environment variable to a secure random value.
+
+Generate a secret locally:
+
+```bash
+# 32 bytes hex
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+In Vercel: Project → Settings → Environment Variables → add `SESSION_SECRET` (value = generated secret). Set it for Production and Preview as needed.
+
+Behavior:
+
+- If `SESSION_SECRET` is set, the server will issue signed session tokens in a cookie (`session`) and will not write session files to disk. This is safe for serverless (Vercel).
+- If `SESSION_SECRET` is not set, the app falls back to file-backed sessions (`data/sessions.json`) for local development.
+- For convenience, when running locally (`NODE_ENV !== 'production'`) and `SESSION_SECRET` is not set, the app will auto-generate a non-secret key and persist it to `data/session-secret.txt` to enable HMAC locally.
+
+Security note: treat `SESSION_SECRET` like any other secret — keep it out of source control and never share it.
+
 ### Docker
 
 Create a `Dockerfile`:
