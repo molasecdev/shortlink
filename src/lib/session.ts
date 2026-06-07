@@ -12,7 +12,35 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // If SESSION_SECRET is provided, use HMAC-signed stateless sessions.
 // Otherwise fall back to file-backed sessions (development).
-const SESSION_SECRET = process.env.SESSION_SECRET || "";
+let SESSION_SECRET = process.env.SESSION_SECRET || "";
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Auto-generate a local SESSION_SECRET and persist it to data/session-secret.txt
+// when running in development and SESSION_SECRET is not provided. This enables
+// HMAC locally without manual env setup.
+if (!SESSION_SECRET && !IS_PROD) {
+	try {
+		// prefer the project's data directory
+		const fs = await import('fs/promises');
+		const path = await import('path');
+		const dataDir = path.join(process.cwd(), 'data');
+		const secretFile = path.join(dataDir, 'session-secret.txt');
+		try {
+			const existing = await fs.readFile(secretFile, 'utf-8');
+			SESSION_SECRET = existing.trim();
+		} catch {
+			// generate and persist
+			await fs.mkdir(dataDir, { recursive: true });
+			const secret = crypto.randomBytes(32).toString('hex');
+			await fs.writeFile(secretFile, secret, { encoding: 'utf-8', flag: 'w' });
+			SESSION_SECRET = secret;
+		}
+	} catch (err) {
+		// ignore and keep SESSION_SECRET empty (will use file-backed sessions)
+		console.warn('Could not auto-generate SESSION_SECRET:', String(err));
+	}
+}
+
 const USE_HMAC = Boolean(SESSION_SECRET);
 
 function base64urlEncode(input: Buffer | string) {
