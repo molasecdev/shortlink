@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
-import { readJson, writeJson, FILES } from "./storage";
+import { storageGetUsers, storageSetUsers } from "./kv";
 import { deleteLinksByUser } from "./links";
 import { deleteSessionsByUser } from "./session";
 
@@ -27,12 +27,12 @@ export async function verifyPassword(
 export async function getUserByUsername(
 	username: string,
 ): Promise<User | null> {
-	const users = await readJson<User[]>(FILES.users);
+	const users = await storageGetUsers<User>();
 	return users.find((u) => u.username === username) || null;
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-	const users = await readJson<User[]>(FILES.users);
+	const users = await storageGetUsers<User>();
 	return users.find((u) => u.id === id) || null;
 }
 
@@ -41,7 +41,7 @@ export async function createUser(
 	password: string,
 	role: "admin" | "user" = "user",
 ): Promise<User> {
-	const users = await readJson<User[]>(FILES.users);
+	const users = await storageGetUsers<User>();
 
 	if (users.some((u) => u.username === username)) {
 		throw new Error("Username already exists");
@@ -57,7 +57,7 @@ export async function createUser(
 	};
 
 	users.push(newUser);
-	await writeJson(FILES.users, users);
+	await storageSetUsers(users);
 
 	return newUser;
 }
@@ -66,7 +66,7 @@ export async function updateUser(
 	id: string,
 	updates: Partial<User>,
 ): Promise<User> {
-	const users: any[] = await readJson<User[]>(FILES.users);
+	const users: any = await storageGetUsers<User>();
 	const userIndex = users.findIndex((u: any) => u.id === id);
 
 	if (userIndex === -1) {
@@ -74,20 +74,19 @@ export async function updateUser(
 	}
 
 	users[userIndex] = { ...users[userIndex], ...updates };
-	await writeJson(FILES.users, users);
+	await storageSetUsers(users);
 
 	return users[userIndex];
 }
 
 export async function deleteUser(id: string): Promise<void> {
-	// remove sessions, then links created by this user, then remove user
 	await deleteSessionsByUser(id);
 	await deleteLinksByUser(id);
-	const users = await readJson<User[]>(FILES.users);
+	const users = await storageGetUsers<User>();
 	const filtered = users.filter((u) => u.id !== id);
-	await writeJson(FILES.users, filtered);
+	await storageSetUsers(filtered);
 }
 
 export async function getAllUsers(): Promise<User[]> {
-	return readJson<User[]>(FILES.users);
+	return storageGetUsers<User>();
 }

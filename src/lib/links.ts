@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { readJson, writeJson, FILES } from "./storage";
+import { storageGetLinks, storageSetLinks } from "./kv";
 
 export interface ShortLink {
 	id: string;
@@ -29,7 +29,7 @@ export async function slugExists(
 	slug: string,
 	excludeId?: string,
 ): Promise<boolean> {
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	return links.some((l) => l.slug === slug && l.id !== excludeId);
 }
 
@@ -48,7 +48,7 @@ export async function createLink(
 		throw new Error("Slug already exists");
 	}
 
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	const newLink: ShortLink = {
 		id: uuidv4(),
 		slug,
@@ -60,28 +60,28 @@ export async function createLink(
 	};
 
 	links.push(newLink);
-	await writeJson(FILES.links, links);
+	await storageSetLinks(links);
 
 	return newLink;
 }
 
 export async function getLinkBySlug(slug: string): Promise<ShortLink | null> {
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	return links.find((l) => l.slug === slug) || null;
 }
 
 export async function getLinkById(id: string): Promise<ShortLink | null> {
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	return links.find((l) => l.id === id) || null;
 }
 
 export async function incrementClicks(slug: string): Promise<void> {
-	const links: any[] = await readJson<ShortLink[]>(FILES.links);
-	const linkIndex = links.findIndex((l) => l.slug === slug);
+	const links: any = await storageGetLinks<ShortLink>();
+	const linkIndex = links.findIndex((l: any) => l.slug === slug);
 
 	if (linkIndex !== -1) {
 		links[linkIndex].clicks++;
-		await writeJson(FILES.links, links);
+		await storageSetLinks(links);
 	}
 }
 
@@ -89,15 +89,15 @@ export async function updateLink(
 	id: string,
 	updates: Partial<ShortLink>,
 ): Promise<ShortLink> {
-	const links: any[] = await readJson<ShortLink[]>(FILES.links);
-	const linkIndex = links.findIndex((l) => l.id === id);
+	const links: any = await storageGetLinks<ShortLink>();
+	const linkIndex = links.findIndex((l: any) => l.id === id);
 
 	if (linkIndex === -1) {
 		throw new Error("Link not found");
 	}
 
 	if (updates.slug && updates.slug !== links[linkIndex].slug) {
-		if (await slugExists(updates.slug)) {
+		if (await slugExists(updates.slug, id)) {
 			throw new Error("Slug already exists");
 		}
 	}
@@ -112,27 +112,27 @@ export async function updateLink(
 		updatedAt: new Date().toISOString(),
 	};
 
-	await writeJson(FILES.links, links);
+	await storageSetLinks(links);
 	return links[linkIndex];
 }
 
 export async function deleteLink(id: string): Promise<void> {
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	const filtered = links.filter((l) => l.id !== id);
-	await writeJson(FILES.links, filtered);
+	await storageSetLinks(filtered);
 }
 
 export async function deleteLinksByUser(userId: string): Promise<void> {
-  const links = await readJson<ShortLink[]>(FILES.links);
-  const filtered = links.filter((l) => l.createdBy !== userId);
-  await writeJson(FILES.links, filtered);
+	const links = await storageGetLinks<ShortLink>();
+	const filtered = links.filter((l) => l.createdBy !== userId);
+	await storageSetLinks(filtered);
 }
 
 export async function getLinksByUser(userId: string): Promise<ShortLink[]> {
-	const links = await readJson<ShortLink[]>(FILES.links);
+	const links = await storageGetLinks<ShortLink>();
 	return links.filter((l) => l.createdBy === userId);
 }
 
 export async function getAllLinks(): Promise<ShortLink[]> {
-	return readJson<ShortLink[]>(FILES.links);
+	return storageGetLinks<ShortLink>();
 }
