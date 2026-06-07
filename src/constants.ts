@@ -1,7 +1,7 @@
 const primarySite = "wildanmaulana.my.id";
 const localSite = "http://localhost:4321";
 
-const subdomain = "https://shorturl";
+const subdomain = "https://shortlink";
 
 export const info = {
 	siteUrl: `${subdomain}.${primarySite}`,
