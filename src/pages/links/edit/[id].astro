@@ -3,7 +3,7 @@ import MainLayout from "../../../layouts/MainLayout.astro";
 import { validateSession } from "../../../lib/session";
 import { getUserById } from "../../../lib/auth";
 import { getLinkById, updateLink, deleteLink } from "../../../lib/links";
-import { info, cekEnv } from "@/constants";
+import { info, cekEnv } from "../../../../constants";
 
 const cookies = Astro.request.headers.get("cookie");
 const sessionId = cookies

@@ -4,7 +4,7 @@ import { validateSession } from "../../lib/session";
 import { getUserById } from "../../lib/auth";
 import { getAllLinks, getLinksByUser } from "../../lib/links";
 import { getAllUsers } from "../../lib/auth";
-import { info, cekEnv } from "@/constants";
+import { info, cekEnv } from "../../../constants";
 import { formatDateToDDMMYYYY } from "../../lib/date";
 
 const cookies = Astro.request.headers.get("cookie");

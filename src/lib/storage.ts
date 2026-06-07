@@ -1,4 +1,4 @@
-import { defaultConfig, info } from "@/constants";
+import { defaultConfig, info } from "../../constants";
 import fs from "fs/promises";
 import path from "path";
 
