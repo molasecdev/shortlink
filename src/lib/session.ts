@@ -15,28 +15,46 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 let SESSION_SECRET = process.env.SESSION_SECRET || "";
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// Auto-generate a local SESSION_SECRET and persist it to data/session-secret.txt
-// when running in development and SESSION_SECRET is not provided. This enables
-// HMAC locally without manual env setup.
-if (!SESSION_SECRET && !IS_PROD) {
+// Auto-generate a SESSION_SECRET when not provided.
+// - In production (serverless), persist to the runtime temp directory (`/tmp`) so
+//   the secret survives across invocations on the same instance.
+// - In development, persist to `data/session-secret.txt` so it's stable across restarts.
+if (!SESSION_SECRET) {
 	try {
-		// prefer the project's data directory
 		const fs = await import('fs/promises');
 		const path = await import('path');
-		const dataDir = path.join(process.cwd(), 'data');
-		const secretFile = path.join(dataDir, 'session-secret.txt');
-		try {
-			const existing = await fs.readFile(secretFile, 'utf-8');
-			SESSION_SECRET = existing.trim();
-		} catch {
-			// generate and persist
-			await fs.mkdir(dataDir, { recursive: true });
-			const secret = crypto.randomBytes(32).toString('hex');
-			await fs.writeFile(secretFile, secret, { encoding: 'utf-8', flag: 'w' });
-			SESSION_SECRET = secret;
+
+		if (IS_PROD) {
+			const tmpDir = process.env.TMPDIR || '/tmp';
+			const secretFile = path.join(tmpDir, 'shortlink-session-secret.txt');
+			try {
+				const existing = await fs.readFile(secretFile, 'utf-8');
+				SESSION_SECRET = existing.trim();
+			} catch {
+				const secret = crypto.randomBytes(32).toString('hex');
+				try {
+					await fs.writeFile(secretFile, secret, { encoding: 'utf-8', flag: 'w' });
+				} catch (e) {
+					// best-effort: ignore write failures
+				}
+				SESSION_SECRET = secret;
+			}
+		} else {
+			const dataDir = path.join(process.cwd(), 'data');
+			const secretFile = path.join(dataDir, 'session-secret.txt');
+			try {
+				const existing = await fs.readFile(secretFile, 'utf-8');
+				SESSION_SECRET = existing.trim();
+			} catch {
+				// generate and persist
+				await fs.mkdir(dataDir, { recursive: true });
+				const secret = crypto.randomBytes(32).toString('hex');
+				await fs.writeFile(secretFile, secret, { encoding: 'utf-8', flag: 'w' });
+				SESSION_SECRET = secret;
+			}
 		}
 	} catch (err) {
-		// ignore and keep SESSION_SECRET empty (will use file-backed sessions)
+		// If anything fails, leave SESSION_SECRET empty and fallback will be file-backed sessions
 		console.warn('Could not auto-generate SESSION_SECRET:', String(err));
 	}
 }
