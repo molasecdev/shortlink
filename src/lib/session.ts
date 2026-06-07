@@ -172,7 +172,7 @@ export function setSessionCookie(headers: Headers, sessionId: string): void {
 	const secureFlag = isProd ? "Secure; " : "";
 	headers.set(
 		"Set-Cookie",
-		`session=${sessionId}; HttpOnly; ${secureFlag}SameSite=Strict; Path=/; Max-Age=${SESSION_DURATION / 1000}`,
+		`session=${sessionId}; HttpOnly; ${secureFlag}SameSite=Lax; Path=/; Max-Age=${SESSION_DURATION / 1000}`,
 	);
 }
 
@@ -181,6 +181,6 @@ export function clearSessionCookie(headers: Headers): void {
 	const secureFlag = isProd ? "Secure; " : "";
 	headers.set(
 		"Set-Cookie",
-		`session=; HttpOnly; ${secureFlag}SameSite=Strict; Path=/; Max-Age=0`,
+		`session=; HttpOnly; ${secureFlag}SameSite=Lax; Path=/; Max-Age=0`,
 	);
 }

@@ -1,232 +1,267 @@
-# ShortURL Management System
+# Shortlink
 
-A modern, lightweight short URL management system built with Astro, TypeScript, and JSON storage. No database required.
+Sistem manajemen URL pendek yang ringan dan modern, dibangun dengan Astro, TypeScript, dan TailwindCSS. Mendukung deployment lokal (file JSON) maupun serverless (Vercel + Upstash Redis) tanpa perubahan kode.
 
-## Features
+## Fitur
 
-- ✅ User authentication with bcrypt password hashing
-- ✅ Create, edit, and delete short URLs
-- ✅ Click tracking for each short URL
-- ✅ Admin panel for user and link management
-- ✅ Role-based access control (Admin/User)
-- ✅ JSON file-based storage (no database needed)
-- ✅ Fast redirects with 302 status code
-- ✅ Search and pagination
-- ✅ Responsive TailwindCSS UI
-- ✅ TypeScript with strict mode
+- Autentikasi pengguna dengan bcrypt password hashing
+- Sesi stateless berbasis HMAC (aman untuk serverless, tidak menulis file)
+- Buat, edit, dan hapus short URL
+- Redirect cepat dengan status 302
+- Pelacakan klik per link
+- Role-based access control (Admin / User)
+- Panel admin untuk manajemen pengguna dan link
+- Storage adaptif: file JSON di lokal, Upstash Redis di production
+- UI responsif dengan TailwindCSS
+- TypeScript dengan strict mode
 
 ## Tech Stack
 
-- **Frontend**: Astro + TypeScript + TailwindCSS
-- **Backend**: Astro API Routes
-- **Authentication**: bcrypt + Session cookies
-- **Storage**: JSON files
-- **Runtime**: Node.js
+| Layer                | Teknologi                      |
+| -------------------- | ------------------------------ |
+| Framework            | Astro 5 + TypeScript           |
+| Styling              | TailwindCSS 3                  |
+| Auth                 | bcrypt + HMAC session cookie   |
+| Storage (lokal)      | JSON files                     |
+| Storage (production) | Upstash Redis via `@vercel/kv` |
+| Deployment           | Vercel (serverless)            |
+| Runtime              | Node.js 18+                    |
 
-## System Requirements
+## Kebutuhan Sistem
 
-- Node.js 18+
-- npm or yarn
+- Node.js 18 atau lebih baru
+- npm
 
-## Installation
-
-1. **Clone or navigate to the project directory**
-
-```bash
-cd /path/to/Shortlink
-```
-
-2. **Install dependencies**
+## Instalasi
 
 ```bash
+# Clone repository
+git clone https://github.com/molasecdev/shortlink.git
+cd shortlink
+
+# Install dependencies
 npm install
 ```
 
-## Configuration
+## Konfigurasi
 
-The system initializes automatically with default configuration:
+Salin file `.env.example` menjadi `.env`:
 
-- **Registration enabled** by default
-- **Site URL** defaults to `http://localhost:4321`
+```bash
+cp .env.example .env
+```
 
-To change these, edit `data/config.json` after first run.
+Isi variabel berikut:
 
-## Running the Application
+```env
+NODE_ENV=development
+SESSION_SECRET=isi_dengan_random_string_minimal_32_karakter
+```
 
-### Development Mode
+Untuk generate `SESSION_SECRET`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+```bash
+openssl rand -hex 32
+```
+
+## Menjalankan Aplikasi
+
+### Development (lokal)
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:4321`
+Aplikasi berjalan di `http://localhost:4321`. Data disimpan di folder `data/` sebagai file JSON.
 
-### Production Build
+### Build Production
 
 ```bash
 npm run build
 ```
 
-### Preview Production Build
+### Preview Build
 
 ```bash
 npm run preview
 ```
 
-## Initial Setup
+## Setup Awal
 
-1. Start the application with `npm run dev`
-2. An admin user is **not** created automatically
-3. Go to `/register` to create your first user account
-4. After creating an account, you can log in at `/login`
-5. To create additional admin users, log in as an admin and use the admin panel
+1. Jalankan aplikasi dengan `npm run dev`
+2. Buka `http://localhost:4321/register`
+3. Buat akun pertama — akun pertama bisa dijadikan admin lewat edit manual di `data/users.json` (set `"role": "admin"`)
+4. Login di `/login`
+5. Tambah user lain via panel admin
 
-## Project Structure
+## Struktur Project
 
 ```
-src/
-├── pages/
-│   ├── index.astro              # Home page
-│   ├── login.astro              # Login page
-│   ├── register.astro           # Registration page
-│   ├── dashboard.astro          # Main dashboard
-│   ├── [slug].astro             # Short URL redirect
-│   ├── links/
-│   │   ├── index.astro          # Links list
-│   │   ├── create.astro         # Create link
-│   │   └── edit/[id].astro      # Edit link
-│   ├── users/
-│   │   ├── index.astro          # Users list (admin only)
-│   │   ├── create.astro         # Create user (admin only)
-│   │   └── edit/[id].astro      # Edit user (admin only)
-│   └── api/
-│       ├── auth/
-│       │   ├── login.ts         # Login endpoint
-│       │   ├── register.ts      # Register endpoint
-│       │   └── logout.ts        # Logout endpoint
-│       ├── links/
-│       │   ├── create.ts        # Create link endpoint
-│       │   └── [id].ts          # Update/delete link endpoints
-│       ├── users/
-│       │   ├── create.ts        # Create user endpoint
-│       │   └── [id].ts          # Update/delete user endpoints
-│       └── [slug].ts            # Redirect endpoint
-├── lib/
-│   ├── storage.ts               # JSON file operations
-│   ├── auth.ts                  # User management
-│   ├── session.ts               # Session management
-│   └── links.ts                 # Short link management
-├── layouts/
-│   └── MainLayout.astro         # Main layout component
-└── middleware.ts                # Auth middleware
-
-data/
-├── users.json                   # User data
-├── links.json                   # Short links data
-├── sessions.json                # Active sessions
-└── config.json                  # System configuration
+Shortlink/
+├── constants.ts                     # URL dan konfigurasi site
+├── astro.config.mjs                 # Konfigurasi Astro
+├── tailwind.config.mjs
+├── tsconfig.json
+├── package.json
+├── .env.example
+│
+├── data/                            # Storage lokal (tidak di-commit ke git)
+│   ├── users.json
+│   ├── links.json
+│   └── config.json
+│
+└── src/
+    ├── lib/
+    │   ├── kv.ts                    # Storage adapter (lokal ↔ Upstash Redis)
+    │   ├── storage.ts               # Operasi file JSON (lokal)
+    │   ├── auth.ts                  # Manajemen user
+    │   ├── session.ts               # HMAC session (stateless)
+    │   ├── links.ts                 # Manajemen short link
+    │   └── date.ts                  # Helper tanggal
+    │
+    ├── middleware/
+    │   └── middleware.ts            # Auth middleware (inject user ke locals)
+    │
+    ├── layouts/
+    │   └── MainLayout.astro
+    │
+    ├── components/
+    │   ├── SiteHeader.astro
+    │   ├── SiteNav.astro
+    │   ├── Footer.astro
+    │   ├── GlobalScripts.astro
+    │   └── GlobalStyles.astro
+    │
+    └── pages/
+        ├── index.astro              # Halaman utama
+        ├── login.astro
+        ├── register.astro
+        ├── dashboard.astro
+        ├── [slug].astro             # Redirect handler (fallback)
+        ├── links/
+        │   ├── index.astro          # Daftar link
+        │   ├── create.astro
+        │   └── edit/[id].astro
+        ├── users/
+        │   ├── index.astro          # Daftar user (admin only)
+        │   ├── create.astro         # Buat user (admin only)
+        │   └── edit/[id].astro
+        └── api/
+            ├── [slug].ts            # Redirect endpoint
+            ├── health.ts
+            ├── auth/
+            │   ├── login.ts
+            │   ├── logout.ts
+            │   └── register.ts
+            ├── links/
+            │   ├── create.ts
+            │   └── [id].ts          # PUT, POST (form), DELETE
+            └── users/
+                ├── create.ts
+                └── [id].ts          # PUT, POST (form), DELETE
 ```
 
-## Usage
+## Deployment ke Vercel
 
-### For Users
+### 1. Siapkan Upstash Redis
 
-1. **Register**: Create an account at `/register`
-2. **Login**: Log in at `/login`
-3. **Create Links**: Go to Links → Create Link
-4. **View Links**: See all your links at Links page
-5. **Edit Links**: Click Edit on any link to modify it
-6. **View Stats**: Dashboard shows your links and click statistics
+Di Vercel Dashboard → Storage → **Upstash for Redis** → Create → Connect ke project.
 
-### For Admins
+Setelah connect, Vercel otomatis inject env variables:
 
-1. All user features plus:
-2. **Manage Users**: Users menu to view, create, and edit users
-3. **View Global Stats**: Dashboard shows system-wide statistics
-4. **Manage All Links**: Can edit or delete any link in the system
+```
+KV_REST_API_URL
+KV_REST_API_TOKEN
+```
 
-## Security Features
+### 2. Tambahkan Environment Variables
 
-- ✅ bcrypt password hashing with salt rounds
-- ✅ HttpOnly, Secure, SameSite cookies for sessions
-- ✅ Session expiration (24 hours)
-- ✅ Input validation and sanitization
-- ✅ Authorization checks on all protected endpoints
-- ✅ Atomic file writes to prevent corruption
+Di Vercel Dashboard → Project → Settings → Environment Variables:
 
-## Data Storage
+```
+SESSION_SECRET = <random string 32+ karakter>
+```
 
-All data is stored as JSON files in the `data/` directory:
-
-- **users.json**: User accounts and password hashes
-- **links.json**: Short URL mappings and statistics
-- **sessions.json**: Active user sessions
-- **config.json**: System configuration
-
-## Backup and Recovery
-
-To backup your data:
+Generate:
 
 ```bash
-# Copy the data directory
-cp -r data/ data-backup/
-```
-
-To restore:
-
-```bash
-cp -r data-backup/* data/
-```
-
-## Troubleshooting
-
-### Port Already in Use
-
-If port 4321 is already in use, you can specify a different port:
-
-```bash
-npm run dev -- --port 3001
-```
-
-### Data Corruption
-
-If JSON files become corrupted, delete them and restart the application. New files will be created automatically.
-
-```bash
-rm data/*.json
-npm run dev
-```
-
-### Session Issues
-
-Clear the session cookie in your browser and log in again.
-
-## Deployment
-
-### SESSION_SECRET (HMAC stateless sessions)
-
-This app supports HMAC-signed stateless sessions stored entirely in a cookie. To enable HMAC sessions (recommended for production on Vercel), set the `SESSION_SECRET` environment variable to a secure random value.
-
-Generate a secret locally:
-
-```bash
-# 32 bytes hex
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-In Vercel: Project → Settings → Environment Variables → add `SESSION_SECRET` (value = generated secret). Set it for Production and Preview as needed.
+### 3. Deploy
 
-Behavior:
+```bash
+git push origin main
+```
 
-- If `SESSION_SECRET` is set, the server will issue signed session tokens in a cookie (`session`) and will not write session files to disk. This is safe for serverless (Vercel).
-- If `SESSION_SECRET` is not set, the app falls back to file-backed sessions (`data/sessions.json`) for local development.
-- For convenience, when running locally (`NODE_ENV !== 'production'`) and `SESSION_SECRET` is not set, the app will auto-generate a non-secret key and persist it to `data/session-secret.txt` to enable HMAC locally.
+Vercel akan otomatis build dan deploy. Storage akan menggunakan Upstash Redis karena `KV_REST_API_URL` tersedia.
 
-Security note: treat `SESSION_SECRET` like any other secret — keep it out of source control and never share it.
+### Cara Kerja Storage Adapter
+
+| Environment           | `KV_REST_API_URL` | Storage yang dipakai |
+| --------------------- | ----------------- | -------------------- |
+| Lokal (`npm run dev`) | Tidak ada         | File JSON di `data/` |
+| Vercel production     | Ada (auto-inject) | Upstash Redis        |
+
+Tidak ada perubahan kode yang diperlukan saat berpindah environment.
+
+## Cara Kerja Sesi
+
+Sesi disimpan sepenuhnya di cookie (stateless), tidak ada yang ditulis ke disk atau database:
+
+1. Saat login, server membuat token: `base64url(userId|expiry|hmac_signature)`
+2. Token disimpan di cookie `session` (HttpOnly, Secure, SameSite=Lax)
+3. Setiap request, server memvalidasi HMAC signature dan expiry
+4. Logout cukup menghapus cookie di client
+
+Keuntungan: aman untuk serverless karena tidak ada state di server.
+
+## API Endpoints
+
+| Method | Endpoint             | Deskripsi                      |
+| ------ | -------------------- | ------------------------------ |
+| POST   | `/api/auth/login`    | Login                          |
+| POST   | `/api/auth/register` | Register                       |
+| GET    | `/api/auth/logout`   | Logout                         |
+| GET    | `/api/health`        | Health check                   |
+| GET    | `/api/:slug`         | Redirect ke target URL         |
+| POST   | `/api/links/create`  | Buat link baru                 |
+| PUT    | `/api/links/:id`     | Update link (JSON)             |
+| POST   | `/api/links/:id`     | Update/hapus link (form)       |
+| DELETE | `/api/links/:id`     | Hapus link (JSON)              |
+| POST   | `/api/users/create`  | Buat user (admin only)         |
+| PUT    | `/api/users/:id`     | Update user (admin only, JSON) |
+| POST   | `/api/users/:id`     | Update/hapus user (form)       |
+| DELETE | `/api/users/:id`     | Hapus user (admin only, JSON)  |
+
+## Fitur Keamanan
+
+- bcrypt password hashing (salt rounds: 10)
+- HMAC-SHA256 untuk signing session token
+- Timing-safe comparison untuk validasi signature
+- Cookie: HttpOnly, Secure (production)
+- Session expiry 24 jam
+- Validasi input di semua endpoint
+- Authorization check di semua protected endpoint
+- CSRF protection dinonaktifkan di Astro karena auth ditangani sendiri
+
+## Deployment Alternatif (VPS / Docker)
+
+### PM2
+
+```bash
+npm run build
+npm install -g pm2
+pm2 start "npm run preview" --name "shortlink"
+pm2 save
+pm2 startup
+```
 
 ### Docker
-
-Create a `Dockerfile`:
 
 ```dockerfile
 FROM node:18-alpine
@@ -239,46 +274,51 @@ EXPOSE 4321
 CMD ["npm", "run", "preview"]
 ```
 
-Build and run:
-
 ```bash
-docker build -t shorturl .
-docker run -p 4321:4321 -v $(pwd)/data:/app/data shorturl
+docker build -t shortlink .
+docker run -p 4321:4321 \
+  -e SESSION_SECRET=your_secret \
+  -v $(pwd)/data:/app/data \
+  shortlink
 ```
 
-### VPS/Server
+Di Docker/VPS, `KV_REST_API_URL` tidak perlu diset — app akan otomatis pakai file JSON di folder `data/`.
 
-1. Clone the repository
-2. Install Node.js 18+
-3. Run `npm install`
-4. Run `npm run build`
-5. Use PM2 or systemd to run the application
+## Troubleshooting
+
+**Port sudah dipakai:**
 
 ```bash
-npm install -g pm2
-pm2 start "npm run preview" --name "shorturl"
+npm run dev -- --port 3001
 ```
 
-## Performance
+**Data korup (lokal):**
 
-- Redirect response time: < 100ms
-- Dashboard load time: < 1 second
-- Supports ~10,000+ links efficiently
+```bash
+rm data/*.json
+npm run dev
+```
 
-## License
+**Session tidak valid setelah deploy:**
+Pastikan `SESSION_SECRET` sama antara semua instance. Kalau secret berubah, semua sesi lama otomatis invalid dan user perlu login ulang.
 
-MIT
-
-## Support
-
-For issues and feature requests, please contact the development team.
+**Vercel: data tidak tersimpan:**
+Pastikan `KV_REST_API_URL` dan `KV_REST_API_TOKEN` sudah ter-inject. Cek di Settings → Environment Variables → verifikasi kedua variable ada untuk environment Production.
 
 ## Changelog
 
-### v0.1.0 - Initial Release
+### v0.2.0
 
-- Complete authentication system
-- User and link management
+- Migrasi session ke HMAC stateless (tidak perlu `sessions.json`)
+- Tambah storage adapter `kv.ts` untuk support Upstash Redis
+- Fix CSRF error di Vercel (`security.checkOrigin: false`)
+- Fix `SameSite=Strict` → `SameSite=Lax` pada session cookie
+- Support deployment ke Vercel tanpa konfigurasi tambahan
+
+### v0.1.0
+
+- Sistem autentikasi lengkap
+- Manajemen user dan link
 - Click tracking
 - Admin dashboard
-- Responsive UI
+- UI responsif
