@@ -41,41 +41,6 @@ const shortUrl = cekEnv(link.slug);
 
 let error = "";
 let success = "";
-
-if (Astro.request.method === "POST") {
-	const formData = await Astro.request.formData();
-	const action = formData.get("action") as string;
-
-	if (action === "delete") {
-		try {
-			await deleteLink(link.id);
-			return Astro.redirect("/links");
-		} catch (err) {
-			console.error("Delete link error:", err);
-			error = err instanceof Error ? err.message : "Failed to delete link";
-		}
-	} else {
-		const slug = formData.get("slug") as string;
-		const targetUrl = formData.get("targetUrl") as string;
-
-		if (!slug || !targetUrl) {
-			error = "Slug and target URL are required";
-		} else {
-			try {
-				const updated = await updateLink(link.id, { slug, targetUrl });
-				if (updated) {
-					return Astro.redirect("/links");
-				}
-			} catch (err) {
-				console.error("Update link error:", err);
-				error =
-					err instanceof Error
-						? err.message
-						: "An error occurred. Please try again.";
-			}
-		}
-	}
-}
 ---
 
 <MainLayout
@@ -110,7 +75,7 @@ if (Astro.request.method === "POST") {
 			</p>
 		</div>
 
-		<form method="POST" class="space-y-4 mb-6">
+		<form method="POST" action={`/api/links/${link.id}`} class="space-y-4 mb-6">
 			<input type="hidden" name="action" value="update" />
 
 			<div>
@@ -158,7 +123,7 @@ if (Astro.request.method === "POST") {
 			<p class="text-sm text-red-800 mb-3">
 				Deleting this link will remove it permanently.
 			</p>
-			<form id="deleteForm" method="POST">
+			<form id="deleteForm" method="POST" action={`/api/links/${link.id}`}>
 				<input type="hidden" name="action" value="delete" />
 				<button
 					type="button"

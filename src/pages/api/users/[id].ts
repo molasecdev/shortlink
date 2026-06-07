@@ -99,6 +99,68 @@ export const PUT: APIRoute = async ({ request, params }) => {
   }
 };
 
+export const POST: APIRoute = async ({ request, params }) => {
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  try {
+    const cookieHeader = request.headers.get('cookie');
+    const sessionId = cookieHeader?.split('; ').find(c => c.startsWith('session='))?.split('=')[1];
+
+    if (!sessionId) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const currentUserId = await validateSession(sessionId);
+    if (!currentUserId) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const actingUser = await getUserById(currentUserId);
+    if (!actingUser) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const targetUserId = params.id as string;
+    const targetUser = await getUserById(targetUserId);
+    if (!targetUser) {
+      return new Response(null, { status: 302, headers: { Location: '/users' } });
+    }
+
+    if (actingUser.role !== 'admin' && actingUser.id !== targetUserId) {
+      return new Response(null, { status: 302, headers: { Location: '/users' } });
+    }
+
+    const form = await request.formData();
+    const action = String(form.get('action') || 'update');
+
+    if (action === 'delete') {
+      await deleteUser(targetUserId);
+      return new Response(null, { status: 302, headers: { Location: '/users' } });
+    }
+
+    const username = String(form.get('username') || '');
+    const role = String(form.get('role') || targetUser.role) as 'admin' | 'user';
+    const password = String(form.get('password') || '');
+
+    if (!username || username.length < 4 || username.length > 30) {
+      return new Response(null, { status: 302, headers: { Location: `/users/edit/${targetUserId}?error=invalid` } });
+    }
+
+    const updates: any = { username, role };
+    if (password) {
+      updates.passwordHash = await hashPassword(password);
+    }
+
+    await updateUser(targetUserId, updates);
+    return new Response(null, { status: 302, headers: { Location: '/users' } });
+  } catch (err) {
+    console.error('User update/delete (form) error:', err);
+    return new Response(null, { status: 500 });
+  }
+};
+
 export const DELETE: APIRoute = async ({ request, params }) => {
   if (request.method !== 'DELETE') {
     return new Response('Method not allowed', { status: 405 });

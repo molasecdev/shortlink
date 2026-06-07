@@ -84,6 +84,65 @@ export const PUT: APIRoute = async ({ request, params }) => {
   }
 };
 
+export const POST: APIRoute = async ({ request, params }) => {
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  try {
+    // Check authentication
+    const cookieHeader = request.headers.get('cookie');
+    const sessionId = cookieHeader?.split('; ').find(c => c.startsWith('session='))?.split('=')[1];
+
+    if (!sessionId) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    const linkId = params.id as string;
+    const link = await getLinkById(linkId);
+
+    if (!link) {
+      return new Response(null, { status: 302, headers: { Location: '/links' } });
+    }
+
+    // Check authorization
+    if (user.role !== 'admin' && link.createdBy !== user.id) {
+      return new Response(null, { status: 302, headers: { Location: '/links' } });
+    }
+
+    const form = await request.formData();
+    const action = String(form.get('action') || 'update');
+
+    if (action === 'delete') {
+      await deleteLink(linkId);
+      return new Response(null, { status: 302, headers: { Location: '/links' } });
+    }
+
+    const slug = String(form.get('slug') || '');
+    const targetUrl = String(form.get('targetUrl') || '');
+
+    if (!slug || !targetUrl) {
+      return new Response(null, { status: 302, headers: { Location: `/links/edit/${linkId}?error=missing` } });
+    }
+
+    await updateLink(linkId, { slug, targetUrl });
+    return new Response(null, { status: 302, headers: { Location: '/links' } });
+  } catch (error) {
+    console.error('Update/Delete link (form) error:', error);
+    return new Response(null, { status: 500 });
+  }
+};
+
 export const DELETE: APIRoute = async ({ request, params }) => {
   if (request.method !== 'DELETE') {
     return new Response('Method not allowed', { status: 405 });

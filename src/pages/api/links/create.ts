@@ -41,9 +41,26 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const { slug, targetUrl } = await request.json() as CreateLinkRequest;
+    // support both JSON and form submissions
+    const contentType = request.headers.get('content-type') || '';
+    let slug = '';
+    let targetUrl = '';
+
+    if (contentType.includes('application/json')) {
+      const body = await request.json() as CreateLinkRequest;
+      slug = body.slug;
+      targetUrl = body.targetUrl;
+    } else {
+      const form = await request.formData();
+      slug = String(form.get('slug') || '');
+      targetUrl = String(form.get('targetUrl') || '');
+    }
 
     if (!slug || !targetUrl) {
+      // if form submission, redirect back with error
+      if (!contentType.includes('application/json')) {
+        return new Response(null, { status: 302, headers: { Location: '/links/create?error=missing' } });
+      }
       return new Response(JSON.stringify({ error: 'Slug and targetUrl are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -52,10 +69,14 @@ export const POST: APIRoute = async ({ request }) => {
 
     const newLink = await createLink(slug, targetUrl, user.id);
 
-    return new Response(JSON.stringify(newLink), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    if (contentType.includes('application/json')) {
+      return new Response(JSON.stringify(newLink), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(null, { status: 302, headers: { Location: '/links' } });
   } catch (error) {
     console.error('Create link error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';

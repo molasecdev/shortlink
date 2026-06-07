@@ -19,62 +19,18 @@ const currentUser = await getUserById(userId);
 if (!currentUser) {
   return Astro.redirect('/login');
 }
-
-// Admin only
-if (currentUser.role !== 'admin') {
-  return Astro.redirect('/dashboard');
+const editUserId = Astro.params.id;
+const editUser = await getUserById(editUserId);
+if (!editUser) {
+  return Astro.redirect('/users');
 }
 
-const { id } = Astro.params;
-const editUser = await getUserById(id as string);
-
-if (!editUser) {
+if (currentUser.role !== 'admin' && currentUser.id !== editUser.id) {
   return Astro.redirect('/users');
 }
 
 let error = '';
 let success = '';
-
-if (Astro.request.method === 'POST') {
-  const formData = await Astro.request.formData();
-  const action = formData.get('action') as string;
-
-  if (action === 'delete') {
-    try {
-      await deleteUser(editUser.id);
-      return Astro.redirect('/users');
-    } catch (err) {
-      console.error('Delete user error:', err);
-      error = err instanceof Error ? err.message : 'Failed to delete user';
-    }
-  } else {
-    const username = formData.get('username') as string;
-    const role = formData.get('role') as 'admin' | 'user';
-    const password = formData.get('password') as string;
-
-    if (!username) {
-      error = 'Username is required';
-    } else if (username.length < 4 || username.length > 30) {
-      error = 'Username must be between 4 and 30 characters';
-    } else if (password && password.length < 8) {
-      error = 'Password must be at least 8 characters';
-    } else {
-      try {
-        const updates: any = { username, role };
-        if (password) {
-          updates.passwordHash = await hashPassword(password);
-        }
-        const updated = await updateUser(editUser.id, updates);
-        if (updated) {
-          return Astro.redirect('/users');
-        }
-      } catch (err) {
-        console.error('Update user error:', err);
-        error = err instanceof Error ? err.message : 'An error occurred. Please try again.';
-      }
-    }
-  }
-}
 ---
 
 <MainLayout title="Edit User" user={{ id: currentUser.id, username: currentUser.username, role: currentUser.role }}>
@@ -84,7 +40,7 @@ if (Astro.request.method === 'POST') {
     {error && <div class="bg-red-100 text-red-800 p-3 rounded mb-4">{error}</div>}
     {success && <div class="bg-green-100 text-green-800 p-3 rounded mb-4">{success}</div>}
 
-    <form method="POST" class="space-y-4 mb-6">
+    <form method="POST" action={`/api/users/${editUser.id}`} class="space-y-4 mb-6">
       <input type="hidden" name="action" value="update" />
 
       <div>
@@ -133,7 +89,7 @@ if (Astro.request.method === 'POST') {
         <div class="bg-red-50 p-4 rounded">
           <h3 class="text-red-900 font-bold mb-2">Danger Zone</h3>
           <p class="text-sm text-red-800 mb-3">Deleting this user will remove it permanently and delete all their links.</p>
-          <form id="deleteUserForm" method="POST">
+          <form id="deleteUserForm" method="POST" action={`/api/users/${editUser.id}`}>
             <input type="hidden" name="action" value="delete" />
             <button type="button" id="openDeleteUserModal" class="btn-danger">Delete User</button>
           </form>
