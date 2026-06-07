@@ -1,6 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
-import { validateSession } from "./lib/session";
-import { getUserById } from "./lib/auth";
+import { validateSession } from "../lib/session";
+import { getUserById } from "../lib/auth";
 
 export interface CurrentUser {
 	id: string;
@@ -8,13 +8,13 @@ export interface CurrentUser {
 	role: "admin" | "user";
 }
 
-export const onRequest = defineMiddleware(async (context, next) => {
+export const onRequest = defineMiddleware(async (context: any, next: any) => {
 	console.log("Origin:", context.request.headers.get("origin"));
 	console.log("Host:", context.request.headers.get("host"));
 	const cookies = context.request.headers.get("cookie");
 	const sessionId = cookies
 		?.split("; ")
-		.find((c) => c.startsWith("session="))
+		.find((c: string) => c.startsWith("session="))
 		?.split("=")[1];
 
 	let user: CurrentUser | null = null;
