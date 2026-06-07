@@ -1,0 +1,22 @@
+---
+import { getLinkBySlug, incrementClicks } from '../lib/links';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+const link = await getLinkBySlug(slug as string);
+
+if (!link) {
+  return Astro.redirect('/');
+}
+
+// Increment clicks in the background
+await incrementClicks(slug as string).catch(error => {
+  console.error('Failed to increment clicks:', error);
+});
+
+return Astro.redirect(link.targetUrl, 302);
+---

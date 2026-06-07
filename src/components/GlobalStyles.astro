@@ -1,0 +1,29 @@
+---
+---
+
+<style is:global>
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif; }
+
+  input[type="text"], input[type="password"], input[type="email"], textarea, select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500;
+  }
+
+  button { @apply px-4 py-2 rounded-md font-medium transition-colors; }
+
+  .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+  .btn-secondary { @apply bg-gray-200 text-gray-800 hover:bg-gray-300; }
+  .btn-info { @apply bg-green-700 text-white hover:bg-green-800; }
+  .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
+  .btn-important { @apply bg-yellow-600 text-white hover:bg-yellow-700; }
+  .btn-sm { @apply px-2 py-1 text-sm; }
+
+  /* Ensure layout allows sticky footer */
+  html, body { height: 100%; }
+  body { @apply min-h-screen flex flex-col bg-gray-50; }
+  main { @apply flex-1; }
+
+</style>

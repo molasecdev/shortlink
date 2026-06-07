@@ -1,0 +1,25 @@
+---
+interface Props {
+  user?: {
+    id: string;
+    username: string;
+    role: "admin" | "user";
+  } | null;
+}
+
+const { user } = Astro.props as Props;
+---
+
+{user && (
+  <div class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex gap-6">
+        <a href="/dashboard" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Dashboard</a>
+        <a href="/links" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Links</a>
+        {user.role === "admin" && (
+          <a href="/users" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Users</a>
+        )}
+      </div>
+    </div>
+  </div>
+)}

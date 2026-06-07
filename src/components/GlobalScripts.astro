@@ -1,0 +1,26 @@
+---
+---
+
+<script>
+  // Password show/hide handler for any toggle button placed next to inputs
+  (function () {
+    try {
+      document.querySelectorAll('button[id^="toggle"]').forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const parent = btn.parentElement;
+          if (!parent) return;
+          const input = parent.querySelector("input");
+          if (!input) return;
+          if (input.type === "password") {
+            input.type = "text";
+          } else {
+            input.type = "password";
+          }
+        });
+      });
+    } catch (e) {
+      // ignore
+    }
+  })();
+</script>
+<!-- dark mode script removed -->

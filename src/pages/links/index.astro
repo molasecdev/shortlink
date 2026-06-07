@@ -1,0 +1,257 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { validateSession } from "../../lib/session";
+import { getUserById } from "../../lib/auth";
+import { getAllLinks, getLinksByUser } from "../../lib/links";
+import { getAllUsers } from "../../lib/auth";
+import { info, cekEnv } from "@/constants";
+import { formatDateToDDMMYYYY } from "../../lib/date";
+
+const cookies = Astro.request.headers.get("cookie");
+const sessionId = cookies
+	?.split("; ")
+	.find((c) => c.startsWith("session="))
+	?.split("=")[1];
+
+if (!sessionId) {
+	return Astro.redirect("/login");
+}
+
+const userId = await validateSession(sessionId);
+if (!userId) {
+	return Astro.redirect("/login");
+}
+
+const user = await getUserById(userId);
+if (!user) {
+	return Astro.redirect("/login");
+}
+
+// Get search, page and user filter parameters
+const searchQuery = Astro.url.searchParams.get("search") || "";
+const page = parseInt(Astro.url.searchParams.get("page") || "1");
+const pageSize = 20;
+const userFilter = Astro.url.searchParams.get("user") || null;
+
+let links = [];
+if (userFilter && user.role === 'admin') {
+	links = await getLinksByUser(userFilter);
+} else {
+	links = user.role === "admin" ? await getAllLinks() : await getLinksByUser(user.id);
+}
+
+// Apply search filter
+if (searchQuery) {
+	links = links.filter(
+		(l) => l.slug.includes(searchQuery) || l.targetUrl.includes(searchQuery),
+	);
+}
+
+// Sort by creation date (newest first)
+links = links.sort(
+	(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+);
+
+// Apply pagination
+const totalPages = Math.ceil(links.length / pageSize);
+const startIndex = (page - 1) * pageSize;
+const paginatedLinks = links.slice(startIndex, startIndex + pageSize);
+const maxTextLength = 30;
+
+const showUrl = (slug) => {
+	const url = cekEnv(slug);
+	return url.length > maxTextLength ? `${url.substring(0, maxTextLength)}...` : url;
+}
+
+const showTarget = (url) => {
+	return url.length > maxTextLength ? `${url.substring(0, maxTextLength)}...` : url;
+}
+
+const getUsers = await getAllUsers();
+const createdBy = (createdBy) => {
+	return createdBy 
+	? getUsers.find((u) => u.id === createdBy)?.username 
+	: "Unknown";
+}
+
+---
+
+<MainLayout
+	title="Links"
+	user={{ id: user.id, username: user.username, role: user.role }}
+>
+	<div>
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-3xl font-bold">Links Management</h1>
+			<button class="btn-primary">
+				<a href="/links/create">Create Link</a>
+			</button>
+		</div>
+
+		<div class="bg-white p-4 rounded-lg shadow mb-6">
+			<form method="GET" class="flex gap-2">
+				<input
+					type="text"
+					name="search"
+					placeholder="Search by slug or URL..."
+					value={searchQuery}
+					class="flex-1"
+				/>
+				<button type="submit" class="btn-primary">Search</button>
+				{
+					searchQuery && (
+						<button class="btn-secondary">
+							<a href="/links">Clear</a>
+						</button>
+					)
+				}
+			</form>
+		</div>
+
+		{
+			paginatedLinks.length === 0 ? (
+				<div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+					<p class="text-yellow-800">
+						No links found.{" "}
+						<a href="/links/create" class="underline">
+							Create one now
+						</a>
+					</p>
+				</div>
+			) : (
+				<>
+					<div class="bg-white rounded-lg shadow overflow-x-auto">
+						<table class="w-full">
+							<thead class="bg-gray-100 border-b">
+								<tr>
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Slug
+									</th>
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Destination
+									</th>
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Open Link
+									</th>
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Clicks
+									</th>
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Created
+									</th>
+									{user.role === "admin" && (
+										<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+											Owner
+										</th>
+									)}
+									<th class="px-6 py-3 text-left text-sm font-medium text-gray-700">
+										Actions
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{paginatedLinks.map((link) => (
+									<tr class="border-b hover:bg-gray-50">
+										<td class="px-6 py-3 text-sm font-medium">{link.slug}</td>
+										<td
+											class="px-6 py-3 text-sm text-gray-600 truncate"
+											title={link.targetUrl}
+										>
+											<a
+												href={link.targetUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="text-blue-600 hover:underline"
+											>
+												{ showTarget(link.targetUrl) }
+											</a>
+										</td>
+										<td class="px-6 py-3 text-sm"
+                    title={cekEnv(link.slug)}>
+											<a
+												href={cekEnv(link.slug)}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="text-blue-600 hover:underline"
+											>{showUrl(link.slug)}
+											</a>
+                    </td>
+										<td class="px-6 py-3 text-sm">{link.clicks}</td>
+										<td class="px-6 py-3 text-sm text-gray-600">
+											{
+											formatDateToDDMMYYYY(link.createdAt)
+											}
+										</td>
+										{user.role === "admin" && (
+											<td class="px-6 py-3 text-sm text-gray-600">
+												{createdBy(link.createdBy)}
+											</td>
+										)}
+										<td class="px-6 py-3 text-sm">
+											<button class="btn-info btn-sm">
+												<a href={`/links/edit/${link.id}`}>Edit</a>
+											</button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+
+					{totalPages > 1 && (
+						<div class="flex justify-center gap-2 mt-6">
+							{page > 1 && (
+                <button class="btn-secondary btn-sm">
+								<a
+									href={`/links?page=1${searchQuery ? `&search=${searchQuery}` : ""}`}
+								>
+									First
+								</a>
+                </button>
+							)}
+							{page > 1 && (
+                <button class="btn-secondary btn-sm">
+								<a
+									href={`/links?page=${page - 1}${searchQuery ? `&search=${searchQuery}` : ""}`}
+								>
+									Previous
+								</a>
+                </button>
+							)}
+
+							{Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+								<a
+									href={`/links?page=${p}${searchQuery ? `&search=${searchQuery}` : ""}`}
+									class={
+										p === page ? "btn-primary btn-sm" : "btn-secondary btn-sm"
+									}
+								>
+									{p}
+								</a>
+							))}
+
+							{page < totalPages && (
+                <button class="btn-secondary btn-sm">
+								<a
+									href={`/links?page=${page + 1}${searchQuery ? `&search=${searchQuery}` : ""}`}
+								>
+									Next
+								</a>
+                </button>
+							)}
+							{page < totalPages && (
+                <button class="btn-secondary btn-sm">
+								<a
+									href={`/links?page=${totalPages}${searchQuery ? `&search=${searchQuery}` : ""}`}
+								>
+									Last
+								</a>
+                </button>
+							)}
+						</div>
+					)}
+				</>
+			)
+		}
+	</div>
+</MainLayout>

@@ -1,0 +1,37 @@
+---
+interface Props {
+  user?: {
+    id: string;
+    username: string;
+    role: "admin" | "user";
+  } | null;
+}
+
+const { user } = Astro.props as Props;
+---
+
+<nav class="bg-white shadow">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <div class="flex items-center">
+        <a href="/" class="text-xl font-bold text-blue-600">ShortURL</a>
+      </div>
+      <div class="flex items-center gap-4">
+        {user ? (
+          <>
+            <span class="text-sm text-gray-700">{user.username}</span>
+            {user.role === "admin" && (
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+            )}
+            <a href="/api/auth/logout" class="text-sm text-gray-600 hover:text-gray-900">Logout</a>
+          </>
+        ) : (
+          <>
+            <a href="/login" class="text-sm text-gray-600 hover:text-gray-900">Login</a>
+            <a href="/register" class="text-sm text-blue-600 hover:text-blue-800">Register</a>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+</nav>

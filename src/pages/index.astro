@@ -1,0 +1,47 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { validateSession } from '../lib/session';
+
+const cookies = Astro.request.headers.get('cookie');
+const sessionId = cookies?.split('; ').find(c => c.startsWith('session='))?.split('=')[1];
+
+let user = null;
+if (sessionId) {
+  const userId = await validateSession(sessionId);
+  if (userId) {
+    return Astro.redirect('/dashboard');
+  }
+}
+---
+
+<MainLayout title="Home" user={null}>
+  <div class="max-w-4xl mx-auto text-center">
+    <h1 class="text-5xl font-bold mb-4">ShortURL Management System</h1>
+    <p class="text-xl text-gray-600 mb-8">Create, manage, and track your short URLs with ease</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-3xl mb-2">⚡</div>
+        <h3 class="font-bold mb-2">Fast & Simple</h3>
+        <p class="text-gray-600 text-sm">Create short URLs in seconds with an intuitive interface</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-3xl mb-2">📊</div>
+        <h3 class="font-bold mb-2">Track Clicks</h3>
+        <p class="text-gray-600 text-sm">Monitor how many times your links are clicked</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-3xl mb-2">👥</div>
+        <h3 class="font-bold mb-2">User Management</h3>
+        <p class="text-gray-600 text-sm">Manage multiple users with different permission levels</p>
+      </div>
+    </div>
+
+    <div class="flex justify-center gap-4">
+      <a href="/login" class="btn-primary px-8 py-3">Login</a>
+      <a href="/register" class="btn-secondary px-8 py-3">Create Account</a>
+    </div>
+  </div>
+</MainLayout>
