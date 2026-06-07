@@ -23,6 +23,18 @@ if (sessionId) {
 let error = "";
 
 if (Astro.request.method === "POST") {
+		// Temporary logging to help debug 403 on production deployments
+		try {
+			const headersObj = {
+				host: Astro.request.headers.get('host'),
+				origin: Astro.request.headers.get('origin'),
+				referer: Astro.request.headers.get('referer'),
+				'x-forwarded-for': Astro.request.headers.get('x-forwarded-for') || Astro.request.headers.get('x-real-ip')
+			};
+			console.log('Login POST received', headersObj);
+		} catch (e) {
+			console.log('Login logging error', e);
+		}
 	const formData = await Astro.request.formData();
 	const username = formData.get("username") as string;
 	const password = formData.get("password") as string;
