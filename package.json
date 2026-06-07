@@ -1,7 +1,7 @@
 {
-	"name": "shorturl",
+	"name": "shortlink",
 	"version": "0.1.0",
-	"description": "Short URL Management System with Astro and JSON Storage",
+	"description": "ShortLink Management System with Astro and JSON Storage",
 	"type": "module",
 	"scripts": {
 		"dev": "astro dev",

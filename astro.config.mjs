@@ -4,15 +4,15 @@ import node from '@astrojs/node';
 import vercel from '@astrojs/vercel';
 import { info } from './constants';
 
-const isVercel = Boolean(process.env.VERCEL);
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
-  site: isVercel ? info.siteUrl : info.localSiteUrl,
+  site: isDevelopment ? info.localSiteUrl : info.siteUrl,
   integrations: [tailwind()],
   output: 'server',
-  adapter: isVercel
-    ? vercel()
-    : node({ mode: 'middleware' }),
+  adapter: isDevelopment
+    ? node({ mode: 'middleware' })
+    : vercel(),
   vite: {
     ssr: {
       external: ['bcrypt']
